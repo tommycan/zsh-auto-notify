@@ -28,9 +28,11 @@ function _auto_notify_format() {
     local command="$2"
     local elapsed="$3"
     local exit_code="$4"
+    local dir="$5"
     MESSAGE="${MESSAGE//\%command/$command}"
     MESSAGE="${MESSAGE//\%elapsed/$elapsed}"
     MESSAGE="${MESSAGE//\%exit_code/$exit_code}"
+    MESSAGE="${MESSAGE//\%dir/$dir}"
     printf "%s" "$MESSAGE"
 }
 
@@ -38,16 +40,17 @@ function _auto_notify_message() {
     local command="$1"
     local elapsed="$2"
     local exit_code="$3"
+    local dir="$4"
     local platform="$(uname)"
     # Run using echo -e in order to make sure notify-send picks up new line
-    local DEFAULT_TITLE="\"%command\" Completed"
-    local DEFAULT_BODY="$(echo -e "Total time: %elapsed seconds\nExit code: %exit_code")"
+    local DEFAULT_TITLE="\"%command\" Completed. Dir %dir"
+    local DEFAULT_BODY="$(echo -e "Total time: %elapsed seconds\nExit code: %exit_code\nDir: %dir")"
 
     local title="${AUTO_NOTIFY_TITLE:-$DEFAULT_TITLE}"
     local text="${AUTO_NOTIFY_BODY:-$DEFAULT_BODY}"
 
-    title="$(_auto_notify_format "$title" "$command" "$elapsed" "$exit_code")"
-    body="$(_auto_notify_format "$text" "$command" "$elapsed" "$exit_code")"
+    title="$(_auto_notify_format "$title" "$command" "$elapsed" "$exit_code" "$dir")"
+    body="$(_auto_notify_format "$text" "$command" "$elapsed" "$exit_code" "$dir")"
 
     if [[ "$platform" == "Linux" ]]; then
         local urgency="normal"
@@ -117,7 +120,7 @@ function _auto_notify_send() {
         let "elapsed = current - AUTO_COMMAND_START"
 
         if [[ $elapsed -gt $AUTO_NOTIFY_THRESHOLD ]]; then
-            _auto_notify_message "$AUTO_COMMAND" "$elapsed" "$exit_code"
+            _auto_notify_message "$AUTO_COMMAND" "$elapsed" "$exit_code" "$AUTO_COMMAND_DIR"
         fi
     fi
 
@@ -133,6 +136,7 @@ function _auto_notify_track() {
     AUTO_COMMAND="${1:-$2}"
     AUTO_COMMAND_FULL="$3"
     AUTO_COMMAND_START="$(date +"%s")"
+    AUTO_COMMAND_DIR="$(pwd)"
 }
 
 function _auto_notify_reset_tracking() {
