@@ -29,10 +29,12 @@ function _auto_notify_format() {
     local elapsed="$3"
     local exit_code="$4"
     local dir="$5"
+    local hostname="$6"
     MESSAGE="${MESSAGE//\%command/$command}"
     MESSAGE="${MESSAGE//\%elapsed/$elapsed}"
     MESSAGE="${MESSAGE//\%exit_code/$exit_code}"
     MESSAGE="${MESSAGE//\%dir/$dir}"
+    MESSAGE="${MESSAGE//\%hostname/$hostname}"
     printf "%s" "$MESSAGE"
 }
 
@@ -41,18 +43,19 @@ function _auto_notify_message() {
     local elapsed="$2"
     local exit_code="$3"
     local dir="$4"
+    local hostname="$5"
     local platform="$(uname)"
     # Run using echo -e in order to make sure notify-send picks up new line
     local DEFAULT_TITLE="%command"
     # local DEFAULT_BODY="$(echo -e "Total time: %elapsed seconds\nExit code: %exit_code")"
     # local DEFAULT_TITLE="\"%command\" Completed. Dir %dir"
-    local DEFAULT_BODY="$(echo -e "\nDirectory: %dir\nCommand: %command\nTotal time: %elapsed seconds\nExit code: %exit_code")"
+    local DEFAULT_BODY="$(echo -e "Hostname: %hostname\nDirectory: %dir\nCommand: %command\nTotal time: %elapsed seconds\nExit code: %exit_code")"
 
     local title="${AUTO_NOTIFY_TITLE:-$DEFAULT_TITLE}"
     local text="${AUTO_NOTIFY_BODY:-$DEFAULT_BODY}"
 
-    title="$(_auto_notify_format "$title" "$command" "$elapsed" "$exit_code" "$dir")"
-    body="$(_auto_notify_format "$text" "$command" "$elapsed" "$exit_code" "$dir")"
+    title="$(_auto_notify_format "$title" "$command" "$elapsed" "$exit_code" "$dir" "$hostname")"
+    body="$(_auto_notify_format "$text" "$command" "$elapsed" "$exit_code" "$dir" "$hostname")"
 
     if [[ "$platform" == "Linux" ]]; then
         local urgency="normal"
@@ -127,7 +130,7 @@ function _auto_notify_send() {
         let "elapsed = current - AUTO_COMMAND_START"
 
         if [[ $elapsed -gt $AUTO_NOTIFY_THRESHOLD ]]; then
-            _auto_notify_message "$AUTO_COMMAND" "$elapsed" "$exit_code" "$AUTO_COMMAND_DIR"
+            _auto_notify_message "$AUTO_COMMAND" "$elapsed" "$exit_code" "$AUTO_COMMAND_DIR" "$AUTO_COMMAND_HOSTNAME"
         fi
     fi
 
@@ -144,6 +147,7 @@ function _auto_notify_track() {
     AUTO_COMMAND_FULL="$3"
     AUTO_COMMAND_START="$(date +"%s")"
     AUTO_COMMAND_DIR="$(pwd)"
+    AUTO_COMMAND_HOSTNAME="$(hostname)"
 }
 
 function _auto_notify_reset_tracking() {
